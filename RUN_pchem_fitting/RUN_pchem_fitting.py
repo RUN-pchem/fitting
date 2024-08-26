@@ -19,7 +19,7 @@ def fit():
 	fdata = widgets.Textarea(value='',placeholder='Information about the model',description=  'Fit Info',layout=wl2,style=ws)
 	
 	# dropdown_fxn = widgets.Dropdown(value='Single Exponential', options=['Linear','Quadratic','Single Exponential','Double Exponential'],description='Fitting Function',style=ws)
-	dropdown_fxn = widgets.Dropdown(value='Single Exponential', options=['Linear','Quadratic','Single Exponential',],description='Fitting Function',style=ws)
+	dropdown_fxn = widgets.Dropdown(value='Single Exponential', options=['Linear','Quadratic','Cubic','Single Exponential',],description='Fitting Function',style=ws)
 	button_fit = widgets.Button(description='Fit',layout=wbl,style=ws)
 
 	hbox = widgets.HBox([dropdown_fxn,button_fit,])
@@ -40,12 +40,16 @@ def fit():
 		return A*x+B
 	def fxn_quadratic(x,A,B,C):
 		return A*x**2.+B*x+C
+	def fxn_cubic(x,A,B,C,D):
+		return A*x**3.+B*x**2.+C*x+D
 
 	def get_fxn():
 		if dropdown_fxn.value == 'Linear':
 			fxn = fxn_linear
 		elif dropdown_fxn.value == 'Quadratic':
 			fxn = fxn_quadratic
+		elif dropdown_fxn.value == 'Cubic':
+			fxn = fxn_cubic
 		elif dropdown_fxn.value == 'Single Exponential':
 			fxn = fxn_exp1
 		elif dropdown_fxn.value == 'Double Exponential':
@@ -61,7 +65,6 @@ def fit():
 			fig,ax = plt.subplots(2,sharex=True,figsize=(4,4),height_ratios=[4, 1],)
 			ax[0].plot(x,y,color='black')
 			ax[1].axhline(y=0,color='black')
-
 
 			fit_x = np.linspace(x.min(),x.max(),1000)
 			fit_y = fxn(fit_x,*theta)
@@ -123,6 +126,8 @@ def fit():
 			return np.polyfit(x,y,1)
 		elif dropdown_fxn.value == 'Quadratic':
 			return np.polyfit(x,y,2)
+		elif dropdown_fxn.value == 'Cubic':
+			return np.polyfit(x,y,3)
 		elif dropdown_fxn.value == 'Single Exponential':
 			return np.array((A,k,B))
 		elif dropdown_fxn.value == 'Double Exponential':
@@ -159,6 +164,8 @@ def fit():
 				params = ['m','b']
 			elif dropdown_fxn.value == 'Quadratic':
 				params = ['A','B','C']
+			elif dropdown_fxn.value == 'Cubic':
+				params = ['A','B','C','D']
 			elif dropdown_fxn.value == 'Single Exponential':
 				params = ['A','k','B']
 			elif dropdown_fxn.value == 'Double Exponential':
@@ -174,12 +181,14 @@ def fit():
 				fstr += 'y = m*x+b\n'
 			elif dropdown_fxn.value == "Quadratic":
 				fstr += 'y = A*x^2 + B*x + C\n'
+			elif dropdown_fxn.value == "Cubic":
+				fstr += 'y = A*x^3 + B*x^2 + C*x + D\n'
 			elif dropdown_fxn.value == "Single Exponential":
 				fstr += 'y = A*exp[-k*(x-x[0])] + B\n'
 			elif dropdown_fxn.value == "Double Exponential":
 				fstr += 'y = A1*exp[-k1*(x-x[0])] + A2*exp[-k2*(x-x[0])] + B\n'
 			for i in range(len(params)):
-				fstr += f'{params[i]} = {theta[i]:.6f}+/-{sig[i]:.6f}\n'
+				fstr += f'{params[i]} = {theta[i]:.6f} +/- {sig[i]:.6f}\n'
 			fstr += f'R^2 = {r_squared:.6f}\n'
 			fdata.value = fstr
 
