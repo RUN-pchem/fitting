@@ -8,7 +8,7 @@ setup(
         'numpy',
 		'scipy',
 		'matplotlib',
-		'ipywidgets'
+		'ipywidgets',
     ],
     url='https://github.com//RUN-pchem/fitting',
     author='Colin Kinz-Thompson',
