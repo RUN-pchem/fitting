@@ -15,15 +15,15 @@ def fit():
 	ydata = widgets.Textarea(value='',placeholder='Enter Dependent Data Here (Y)',description='Y data ',layout=wl2,style=ws)
 	xdata = widgets.Textarea(value='',placeholder='Enter Independent Data Here (X)',description='X data ',layout=wl2,style=ws)
 
-	odata = widgets.Textarea(value='',placeholder='Output Data (Model)',description='Model   ',layout=wl2,style=ws)
+	# odata = widgets.Textarea(value='',placeholder='Output Data (Model)',description='Model   ',layout=wl2,style=ws)
 	fdata = widgets.Textarea(value='',placeholder='Information about the model',description=  'Fit Info',layout=wl2,style=ws)
 	
-	# dropdown_fxn = widgets.Dropdown(value='Single Exponential', options=['Linear','Quadratic','Single Exponential','Double Exponential'],description='Fitting Function',style=ws)
-	dropdown_fxn = widgets.Dropdown(value='Single Exponential', options=['Linear','Quadratic','Cubic','Single Exponential',],description='Fitting Function',style=ws)
+	# dropdown_fxn = widgets.Dropdown(value='Exponential Decay', options=['Linear','Quadratic','Exponential Decay','Double Exponential'],description='Fitting Function',style=ws)
+	dropdown_fxn = widgets.Dropdown(value='Exponential Decay', options=['Linear','Quadratic','Cubic','Exponential Decay',],description='Fitting Function',style=ws)
 	button_fit = widgets.Button(description='Fit',layout=wbl,style=ws)
 
 	hbox = widgets.HBox([dropdown_fxn,button_fit,])
-	total = widgets.VBox([xdata,ydata,odata,fdata,hbox])
+	total = widgets.VBox([xdata,ydata,fdata,hbox])
 
 	def show_ui():
 		with out:
@@ -31,11 +31,11 @@ def fit():
 			display(total)
 
 	def fxn_exp1(x,A1,k1,B):
-		return A1 * np.exp(-k1*(x-x[0])) + B
+		return A1 * np.exp(-k1*(x)) + B
 	def fxn_exp2(x,A1,k1,A2,k2,B):
 		if k1>=k2:
 			return x*np.nan
-		return A1 * np.exp(-k1*(x-x[0])) + A2 * np.exp(-k2*(x-x[0])) + B
+		return A1 * np.exp(-k1*(x)) + A2 * np.exp(-k2*(x)) + B
 	def fxn_linear(x,A,B):
 		return A*x+B
 	def fxn_quadratic(x,A,B,C):
@@ -50,7 +50,7 @@ def fit():
 			fxn = fxn_quadratic
 		elif dropdown_fxn.value == 'Cubic':
 			fxn = fxn_cubic
-		elif dropdown_fxn.value == 'Single Exponential':
+		elif dropdown_fxn.value == 'Exponential Decay':
 			fxn = fxn_exp1
 		elif dropdown_fxn.value == 'Double Exponential':
 			fxn = fxn_exp2
@@ -63,11 +63,12 @@ def fit():
 		
 		if not theta is None:
 			fig,ax = plt.subplots(2,sharex=True,figsize=(4,4),height_ratios=[4, 1],)
-			ax[0].plot(x,y,color='black')
+			ax[0].plot(x,y,color='black',ls='none',marker='o')
 			ax[1].axhline(y=0,color='black')
 
 			fit_x = np.linspace(x.min(),x.max(),1000)
 			fit_y = fxn(fit_x,*theta)
+
 			residual = residual_fxn(theta,x,y)
 
 			ax[0].plot(fit_x,fit_y,color='tab:red')
@@ -118,9 +119,13 @@ def fit():
 		if x is None:
 			return None
 		
-		A = y.max()-y.min() if y.argmax() < y.argmin() else y.min()-y.max()
-		k = 10./(x.max()-x.min())
-		B = y.mean()
+		# B = y.min()
+		# k,A = np.polyfit(x,np.log(y-B),1)
+
+		# A = np.exp(A)
+		# # A = y.max()-y.min() if y.argmax() < y.argmin() else y.min()-y.max()
+		# # k = 10./(x.max()-x.min())
+		# # B = y.mean()
 		
 		if dropdown_fxn.value == 'Linear':
 			return np.polyfit(x,y,1)
@@ -128,10 +133,13 @@ def fit():
 			return np.polyfit(x,y,2)
 		elif dropdown_fxn.value == 'Cubic':
 			return np.polyfit(x,y,3)
-		elif dropdown_fxn.value == 'Single Exponential':
+		elif dropdown_fxn.value == 'Exponential Decay':
+			k = 1./(x.max()-x.min())*10.
+			B = y[-1]
+			A = y[0]-y[-1]
 			return np.array((A,k,B))
-		elif dropdown_fxn.value == 'Double Exponential':
-			return np.array((A/2.,k/10.,0,k,B))
+		# elif dropdown_fxn.value == 'Double Exponential':
+		# 	return np.array((A/2.,k/2.,A/2.,k*2,B))
 
 	def click_fit(b):
 		with out:
@@ -148,14 +156,15 @@ def fit():
 				return
 						
 			fxn,residual_fxn = get_fxn()
-			result = least_squares(residual_fxn,x0=theta,args=(x,y))
-			theta = result.x
+			# result = least_squares(residual_fxn,x0=theta,args=(x,y))
+			# theta = result.x
+			theta,cov = curve_fit(fxn,x,y,theta,maxfev=100000)
 
-			if not result.success:
-				raise Exception('Failed')
+			# if not result.success:
+			# 	raise Exception('Failed')
 
-			ss_res = np.sum(result.fun**2.)
-			cov = ss_res/float(x.size-result.x.size) * np.linalg.inv(np.dot(result.jac.T,result.jac))
+			ss_res = np.sum(residual_fxn(theta,x,y)**2.)
+			# cov = ss_res/float(x.size-result.x.size) * np.linalg.inv(np.dot(result.jac.T,result.jac))
 			sig = np.sqrt(np.diag(cov))
 			ss_tot = np.sum((y - np.mean(y))**2.)
 			r_squared = 1.-(ss_res/ss_tot)
@@ -166,15 +175,10 @@ def fit():
 				params = ['A','B','C']
 			elif dropdown_fxn.value == 'Cubic':
 				params = ['A','B','C','D']
-			elif dropdown_fxn.value == 'Single Exponential':
+			elif dropdown_fxn.value == 'Exponential Decay':
 				params = ['A','k','B']
 			elif dropdown_fxn.value == 'Double Exponential':
 				params = ['A1','k1','A2','k2','B']
-			
-			oy = fxn(x,*theta)
-			ry = residual_fxn(theta,x,y)
-			# odata.value = '\n'.join([f'{x[i]:.8f}\t{y[i]:.8f}\t{oy[i]:.8f}\t{ry[i]:.8f}\t' for i in range(x.size)])
-			odata.value = '\n'.join([f'{oy[i]:.8f}' for i in range(x.size)])
 
 			fstr = 'Fitting Results: '
 			if dropdown_fxn.value == "Linear":
@@ -183,12 +187,12 @@ def fit():
 				fstr += 'y = A*x^2 + B*x + C\n'
 			elif dropdown_fxn.value == "Cubic":
 				fstr += 'y = A*x^3 + B*x^2 + C*x + D\n'
-			elif dropdown_fxn.value == "Single Exponential":
-				fstr += 'y = A*exp[-k*(x-x[0])] + B\n'
+			elif dropdown_fxn.value == "Exponential Decay":
+				fstr += 'y = A*exp[-k*x] + B\n'
 			elif dropdown_fxn.value == "Double Exponential":
-				fstr += 'y = A1*exp[-k1*(x-x[0])] + A2*exp[-k2*(x-x[0])] + B\n'
+				fstr += 'y = A1*exp[-k1*x] + A2*exp[-k2*x] + B\n'
 			for i in range(len(params)):
-				fstr += f'{params[i]} = {theta[i]:.6f} +/- {sig[i]:.6f}\n'
+				fstr += f'{params[i]} = {theta[i]:.3e} +/- {sig[i]:.3e}\n'
 			fstr += f'R^2 = {r_squared:.6f}\n'
 			fdata.value = fstr
 
