@@ -135,8 +135,14 @@ def fit():
 			return np.polyfit(x,y,3)
 		elif dropdown_fxn.value == 'Exponential Decay':
 			k = 1./(x.max()-x.min())*10.
-			B = y[-1]
+			# B = y[-1]
 			A = y[0]-y[-1]
+			
+			c1,c0 = np.polyfit(x,np.log(y),1)
+			A = np.exp(c0)
+			k = -c1
+			B = y.mean()
+
 			return np.array((A,k,B))
 		# elif dropdown_fxn.value == 'Double Exponential':
 		# 	return np.array((A/2.,k/2.,A/2.,k*2,B))
@@ -170,11 +176,11 @@ def fit():
 			r_squared = 1.-(ss_res/ss_tot)
 
 			if dropdown_fxn.value == 'Linear':
-				params = ['m','b']
+				params = ['C1','C0']
 			elif dropdown_fxn.value == 'Quadratic':
-				params = ['A','B','C']
+				params = ['C2','C1','C0']
 			elif dropdown_fxn.value == 'Cubic':
-				params = ['A','B','C','D']
+				params = ['C3','C2','C1','C0']
 			elif dropdown_fxn.value == 'Exponential Decay':
 				params = ['A','k','B']
 			elif dropdown_fxn.value == 'Double Exponential':
@@ -182,11 +188,11 @@ def fit():
 
 			fstr = 'Fitting Results: '
 			if dropdown_fxn.value == "Linear":
-				fstr += 'y = m*x+b\n'
+				fstr += 'y = C1*x + C0\n'
 			elif dropdown_fxn.value == "Quadratic":
-				fstr += 'y = A*x^2 + B*x + C\n'
+				fstr += 'y = C2*x^2 + C1*x + C0\n'
 			elif dropdown_fxn.value == "Cubic":
-				fstr += 'y = A*x^3 + B*x^2 + C*x + D\n'
+				fstr += 'y = C3*x^3 + C2*x^2 + C1*x + C0\n'
 			elif dropdown_fxn.value == "Exponential Decay":
 				fstr += 'y = A*exp[-k*x] + B\n'
 			elif dropdown_fxn.value == "Double Exponential":
