@@ -19,7 +19,7 @@ def fit():
 	fdata = widgets.Textarea(value='',placeholder='Information about the model',description=  'Fit Info',layout=wl2,style=ws)
 	
 	# dropdown_fxn = widgets.Dropdown(value='Exponential Decay', options=['Linear','Quadratic','Exponential Decay','Double Exponential'],description='Fitting Function',style=ws)
-	dropdown_fxn = widgets.Dropdown(value='Exponential Decay', options=['Linear','Quadratic','Cubic','Exponential Decay',],description='Fitting Function',style=ws)
+	dropdown_fxn = widgets.Dropdown(value='Linear', options=['Linear','Quadratic','Cubic','Exponential Decay','Double Exponential',r'Scattering: Ax^-4 + Bx^2',r'Scattering: Ax^-4',r'Scattering: Bx^2'],description='Fitting Function',style=ws)
 	button_fit = widgets.Button(description='Fit',layout=wbl,style=ws)
 
 	hbox = widgets.HBox([dropdown_fxn,button_fit,])
@@ -42,6 +42,12 @@ def fit():
 		return A*x**2.+B*x+C
 	def fxn_cubic(x,A,B,C,D):
 		return A*x**3.+B*x**2.+C*x+D
+	def fxn_scattering(x,A,B):
+		return A*x**-4. + B*x**2.
+	def fxn_scattering_A(x,A):
+		return A*x**-4.
+	def fxn_scattering_B(x,B):
+		return B*x**2.
 
 	def get_fxn():
 		if dropdown_fxn.value == 'Linear':
@@ -54,6 +60,12 @@ def fit():
 			fxn = fxn_exp1
 		elif dropdown_fxn.value == 'Double Exponential':
 			fxn = fxn_exp2
+		elif dropdown_fxn.value == r'Scattering: Ax^-4 + Bx^2':
+			fxn = fxn_scattering
+		elif dropdown_fxn.value == r'Scattering: Ax^-4':
+			fxn = fxn_scattering_A
+		elif dropdown_fxn.value == r'Scattering: Bx^2':
+			fxn = fxn_scattering_B
 		def residual_fxn(theta,x,y):
 			return y - fxn(x,*theta)
 		return fxn,residual_fxn
@@ -137,15 +149,29 @@ def fit():
 			k = 1./(x.max()-x.min())*10.
 			# B = y[-1]
 			A = y[0]-y[-1]
-			
 			c1,c0 = np.polyfit(x,np.log(y),1)
 			A = np.exp(c0)
 			k = -c1
 			B = y.mean()
-
 			return np.array((A,k,B))
-		# elif dropdown_fxn.value == 'Double Exponential':
-		# 	return np.array((A/2.,k/2.,A/2.,k*2,B))
+		elif dropdown_fxn.value == r'Scattering: Ax^-4 + Bx^2':
+			imin = x.argmin()
+			imax = x.argmax()
+			A = y[imin] * x[imin]**4.
+			# B = y[imax] / x[imax]**2.
+			B = 0.
+			return np.array((A,B))
+		elif dropdown_fxn.value == r'Scattering: Ax^-4':
+			A = np.mean(y / (x**-4.))
+			return np.array((A,))
+		elif dropdown_fxn.value == r'Scattering: Bx^2':
+			B = np.mean(y / (x**2.))
+			return np.array((B,))
+		elif dropdown_fxn.value == 'Double Exponential':
+			k = 1./(x.max()-x.min())*10.
+			B = y[-1]
+			A = y[0]-y[-1]
+			return np.array((A/2.,k/2.,A/2.,k*2,B))
 
 	def click_fit(b):
 		with out:
@@ -185,6 +211,12 @@ def fit():
 				params = ['A','k','B']
 			elif dropdown_fxn.value == 'Double Exponential':
 				params = ['A1','k1','A2','k2','B']
+			elif dropdown_fxn.value == r'Scattering: Ax^-4 + Bx^2':
+				params = ['A','B']
+			elif dropdown_fxn.value == r'Scattering: Ax^-4':
+				params = ['A',]
+			elif dropdown_fxn.value == r'Scattering: Bx^2':
+				params = ['B',]
 
 			fstr = 'Fitting Results: '
 			if dropdown_fxn.value == "Linear":
@@ -197,6 +229,12 @@ def fit():
 				fstr += 'y = A*exp[-k*x] + B\n'
 			elif dropdown_fxn.value == "Double Exponential":
 				fstr += 'y = A1*exp[-k1*x] + A2*exp[-k2*x] + B\n'
+			elif dropdown_fxn.value == r'Scattering: Ax^-4 + Bx^2':
+				fstr += 'y = A*x^(-4) + B*x^2\n'
+			elif dropdown_fxn.value == r'Scattering: Ax^-4':
+				fstr += 'y = A*x^(-4)\n'
+			elif dropdown_fxn.value == r'Scattering: Bx^2':
+				fstr += 'y = B*x^2\n'
 			for i in range(len(params)):
 				fstr += f'{params[i]} = {theta[i]:.3e} +/- {sig[i]:.3e}\n'
 			fstr += f'R^2 = {r_squared:.6f}\n'
