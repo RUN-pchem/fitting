@@ -19,7 +19,7 @@ def fit():
 	fdata = widgets.Textarea(value='',placeholder='Information about the model',description=  'Fit Info',layout=wl2,style=ws)
 	
 	# dropdown_fxn = widgets.Dropdown(value='Exponential Decay', options=['Linear','Quadratic','Exponential Decay','Double Exponential'],description='Fitting Function',style=ws)
-	dropdown_fxn = widgets.Dropdown(value='Linear', options=['Linear','Quadratic','Cubic','Exponential Decay','Double Exponential',r'Scattering: Ax^-4 + Bx^2',r'Scattering: Ax^-4',r'Scattering: Bx^2'],description='Fitting Function',style=ws)
+	dropdown_fxn = widgets.Dropdown(value='Linear', options=['Linear','Quadratic','Cubic','Exponential Decay',r'Scattering: Ax^-4 + Bx^2',r'Scattering: Ax^-4',r'Scattering: Bx^2'],description='Fitting Function',style=ws)
 	button_fit = widgets.Button(description='Fit',layout=wbl,style=ws)
 
 	hbox = widgets.HBox([dropdown_fxn,button_fit,])
@@ -149,7 +149,8 @@ def fit():
 			k = 1./(x.max()-x.min())*10.
 			# B = y[-1]
 			A = y[0]-y[-1]
-			c1,c0 = np.polyfit(x,np.log(y),1)
+			yy = np.sort(y)
+			c1,c0 = np.polyfit(x,np.log(y-yy[0]-(yy[1]-y[0])*.01),1)
 			A = np.exp(c0)
 			k = -c1
 			B = y.mean()
