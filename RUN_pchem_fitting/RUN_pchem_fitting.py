@@ -146,14 +146,33 @@ def fit():
 		elif dropdown_fxn.value == 'Cubic':
 			return np.polyfit(x,y,3)
 		elif dropdown_fxn.value == 'Exponential Decay':
-			k = 1./(x.max()-x.min())*10.
-			# B = y[-1]
-			A = y[0]-y[-1]
-			yy = np.sort(y)
-			c1,c0 = np.polyfit(x,np.log(y-yy[0]-(yy[1]-y[0])*.01),1)
-			A = np.exp(c0)
-			k = -c1
-			B = y.mean()
+			# k = 1./(x.max()-x.min())*10.
+			# # B = y[-1]
+			# A = y[0]-y[-1]
+			# yy = np.sort(y)
+			# c1,c0 = np.polyfit(x,np.log(y-yy[0]-(yy[1]-yy[0])*.01),1)
+			# A = np.exp(c0)
+			# k = -c1
+			# B = y.mean()
+			m,b = np.polyfit(x,y,1)
+			if m >0:
+				yy = -y.copy()
+				flip=True
+			else:
+				yy = y.copy()
+				flip=False
+			bb = yy.min() - np.abs(m*(x[1]-x[0]))
+			yy -= bb
+
+			lm,lb = np.polyfit(x,np.log(yy),1)
+
+			A = np.exp(lb)
+			k = -lm
+			B = bb
+			if flip:
+				A = -A
+				B = -B
+			# print(A,k,B)
 			return np.array((A,k,B))
 		elif dropdown_fxn.value == r'Scattering: Ax^-4 + Bx^2':
 			imin = x.argmin()
